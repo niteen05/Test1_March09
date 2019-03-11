@@ -1,0 +1,37 @@
+FROM alpine
+
+MAINTAINER Niteen Acharya <niteenacharya@outlook.com>
+
+# Update package index and install git
+
+RUN apk add --update git
+
+ENV JAVA_DISTRIBUTION openjdk
+ENV JAVA_VERSION 8
+
+# Java
+RUN apk add "$JAVA_DISTRIBUTION$JAVA_VERSION" --update && rm -rf /var/cache/apk/* && ln -s "/usr/lib/jvm/java-1.$JAVA_VERSION-openjdk/bin/javac" /usr/bin/javac
+
+# Maven
+RUN apk add maven
+
+#From URL argument clone repository
+ARG url 
+WORKDIR /app
+RUN git clone ${url}
+
+ARG project 
+
+#RUN mvn test
+RUN mvn -f /app/${project}/pom.xml test
+
+#RUN mvn install
+RUN mvn -f /app/${project}/pom.xml -B -DskipTests clean package
+
+ARG artifactid
+ARG version
+ENV artifact ./${project}/target/${artifactid}-${version}.jar
+
+EXPOSE 8080
+ENTRYPOINT ["sh", "-c"]
+CMD ["java -jar ${artifact}"]
